@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/app-icon.svg">
+  <script src="js/pwa.js"></script>
+  <title>History</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; max-width: 100%; margin: 0; overflow: hidden;
+    }
+    body {
+      background:
+        radial-gradient(circle at 12% 0%, rgba(96, 165, 250, 0.96), transparent 26%),
+        radial-gradient(circle at 90% 10%, rgba(255,255,255,0.96), transparent 18%),
+        linear-gradient(135deg, #eaf5ff 0%, #dceeff 26%, #cfe3ff 70%, #ebf7ff 100%);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 0;
+      color: #1e1e1e;
+    }
+    .app-header {
+      position: sticky; top: 0; z-index: 50; width: 100%;
+      padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255,255,255,0.32); border-bottom: 1px solid rgba(255,255,255,0.78); box-shadow: 0 18px 40px rgba(23,32,51,0.08), inset 0 1px 0 rgba(255,255,255,0.6); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+    }
+    .logo-container { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+    .header-icons { display: flex; align-items: center; gap: 14px; }
+    .icon-btn { width: 36px; height: 36px; border: 1px solid rgba(255,255,255,0.52); border-radius: 12px; background: rgba(255,255,255,0.18); cursor: pointer; display: flex; align-items: center; justify-content: center; color: #172033; box-shadow: 0 8px 20px rgba(37,99,235,0.08); transition: all 0.2s ease; }
+    .icon-btn:hover { background: rgba(255,255,255,0.34); transform: translateY(-1px); }
+    .icon-btn:active { transform: scale(0.97); box-shadow: 0 0 0 3px rgba(96,165,250,0.18), 0 0 20px rgba(59,130,246,0.35); }
+    .icon-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+    .history-container {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: 0 auto;
+      padding: 20px 16px 90px;
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      position: relative; z-index: 1;
+    }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .clear-link {
+      font-size: 0.8rem;
+      color: #ef4444;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .history-item {
+      background: rgba(255,255,255,0.28);
+      border: 1px solid rgba(255,255,255,0.7);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 16px 32px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.5);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+    }
+    .history-item:hover { box-shadow: 0 18px 36px rgba(37,99,235,0.12); transform: translateY(-1px); }
+    .history-item:active { transform: scale(0.99); box-shadow: 0 0 0 3px rgba(96,165,250,0.12), 0 0 20px rgba(59,130,246,0.2); }
+    .history-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-type {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .timestamp {
+      font-size: 0.75rem;
+      color: #888;
+    }
+    .details {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #f0f0f0;
+      display: none;
+    }
+    .details.open { display: block; }
+    .details-section {
+      margin-bottom: 12px;
+    }
+    .details-label {
+      font-weight: 600;
+      color: #555;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+    }
+    .details-content {
+      background: #f9f9f9;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .details-content img {
+      max-width: 100%;
+      border-radius: 8px;
+    }
+    .score-bar {
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .score-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+    .score-fill.low { background: #10B981; }
+    .score-fill.medium { background: #F59E0B; }
+    .score-fill.high { background: #EF4444; }
+    .empty {
+      text-align: center;
+      color: #888;
+      padding: 20px;
+    }
+    .bottom-nav {
+      position: sticky; bottom: 0; z-index: 50; display: flex; justify-content: space-around; align-items: center;
+      background: rgba(255,255,255,0.28); border-top: 1px solid rgba(255,255,255,0.7); padding: 10px 0 18px; box-shadow: 0 -18px 30px rgba(37,99,235,0.08); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+    }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.5); border-radius: 14px; cursor: pointer; color: #6b7280; font-size: 0.7rem; font-weight: 500; text-decoration: none; padding: 6px 8px; transition: all 0.2s ease; }
+    .nav-item:hover { background: rgba(255,255,255,0.28); color: #2563EB; transform: translateY(-1px); }
+    .nav-item:active { transform: scale(0.97); box-shadow: 0 0 0 3px rgba(96,165,250,0.12), 0 0 20px rgba(59,130,246,0.25); }
+    .nav-item.active { color: #2563EB; }
+    .nav-item svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-item .check-circle { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #60a5fa, #2563eb); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(37,99,235,0.28); color: white; }
+    .nav-item .check-circle svg { width: 24px; height: 24px; stroke: white; fill: none; }
+  </style>
+</head>
+<body>
+  <script src="js/auth-guard.js"></script>
+  <header class="app-header">
+    <div class="logo-container">
+      <svg viewBox="0 0 200 200" width="40" height="40">
+        <defs><linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#2563EB"/><stop offset="100%" stop-color="#06B6D4"/></linearGradient></defs>
+        <circle cx="100" cy="100" r="80" fill="#F0F9FF" stroke="url(#logoGrad)" stroke-width="6"/>
+        <text x="100" y="130" font-family="Arial" font-size="90" font-weight="700" fill="url(#logoGrad)" text-anchor="middle" letter-spacing="-8">AI</text>
+        <path d="M 30 100 A 70 70 0 0 1 100 30" fill="none" stroke="url(#logoGrad)" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="30" cy="100" r="4" fill="#2563EB"/>
+      </svg>
+    </div>
+    <div class="header-icons">
+      <a href="login.html" class="icon-btn" aria-label="Profile"><svg viewBox="0 0 28 28"><circle cx="14" cy="9" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5,25 C5,18 9,15 14,15 C19,15 23,18 23,25" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>
+      <button class="icon-btn" aria-label="Notifications" type="button"><svg viewBox="0 0 28 28"><path d="M8,10 C8,6 11,3 14,3 C17,3 20,6 20,10 L21,14 L21,16 C21,17 20,18 20,19 L8,19 C8,18 7,17 7,16 L7,14 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10,20 A4,4 0 0,0 18,20" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="14" cy="20" r="1.5" fill="currentColor"/></svg></button>
+    </div>
+  </header>
+  <div class="history-container">
+    <div class="header-row">
+      <h2>History</h2>
+      <button class="clear-link" id="clearHistoryBtn">Clear all</button>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <script>
+    function loadHistory() {
+      let allHistory = [];
+      try { allHistory = JSON.parse(localStorage.getItem('scanHistory') || '[]'); } catch { localStorage.removeItem('scanHistory'); }
+      if (!Array.isArray(allHistory)) allHistory = [];
+      const list = document.getElementById('historyList');
+
+      if (allHistory.length === 0) {
+        list.innerHTML = '<p class="empty">No history yet.</p>';
+        return;
+      }
+
+      list.innerHTML = allHistory.map((entry, index) => {
+        // Determine label
+        let typeLabel = entry.type || 'Unknown';
+        // Remove "Free from AI" phrase if present, replace with "Free AI"
+        if (typeLabel === 'Free from AI') {
+          typeLabel = 'Free AI';
+        }
+
+        // Build details content based on entry structure
+        let detailsHTML = '';
+
+        // If entry has input/output (Free AI entry)
+        if (entry.input && entry.output) {
+          detailsHTML = `
+            <div class="details-section">
+              <div class="details-label">Input (${entry.input.type || 'unknown'})</div>
+              <div class="details-content">
+                ${entry.input.type === 'photo' 
+                  ? `<img src="${entry.input.data}" alt="Input photo">` 
+                  : `<pre>${entry.input.data || ''}</pre>`}
+                ${entry.input.fileName ? `<p>File: ${entry.input.fileName}</p>` : ''}
+              </div>
+            </div>
+            <div class="details-section">
+              <div class="details-label">Output</div>
+              <div class="details-content">
+                <pre>${JSON.stringify(entry.output, null, 2)}</pre>
+              </div>
+            </div>
+          `;
+        } else {
+          // Detection entry (from detection.html)
+          const score = entry.score || 0;
+          const scoreClass = score < 75 ? 'low' : score < 90 ? 'medium' : 'high';
+          const aiClass = entry.is_ai ? 'ai' : 'human';
+          const aiLabel = entry.is_ai ? 'AI-Generated' : 'Human';
+          detailsHTML = `
+            ${score ? `
+              <div class="score-bar">
+                <div class="score-fill ${scoreClass}" style="width:${score}%;"></div>
+              </div>
+              <small>AI Probability: ${score}%</small>
+            ` : ''}
+            <p><strong>Status:</strong> ${aiLabel}</p>
+            ${entry.message ? `<p>${entry.message}</p>` : ''}
+            ${entry.details?.length ? `<p><strong>Details found:</strong> ${entry.details.join('; ')}</p>` : ''}
+            ${entry.prompt ? `<p><strong>Prompt:</strong> ${entry.prompt}</p>` : ''}
+            ${entry.photo ? `<img src="${entry.photo}" style="max-width:100%; border-radius:8px;" alt="Detection photo">` : ''}
+            ${entry.contentPreview ? `<div class="details-content">${entry.contentPreview}</div>` : ''}
+          `;
+        }
+
+        return `
+          <div class="history-item" data-index="${index}">
+            <div class="history-item-top">
+              <span class="history-type">${typeLabel}</span>
+              <span class="timestamp">${entry.timestamp || ''}</span>
+            </div>
+            <div class="details" id="details-${index}">
+              ${detailsHTML}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Toggle details on click
+      document.querySelectorAll('.history-item').forEach(item => {
+        item.addEventListener('click', function() {
+          const index = this.dataset.index;
+          const details = document.getElementById(`details-${index}`);
+          details.classList.toggle('open');
+        });
+      });
+    }
+
+    document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+      if (confirm('Clear all history?')) {
+        localStorage.removeItem('scanHistory');
+        loadHistory();
+      }
+    });
+
+    loadHistory();
+  </script>
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <button class="nav-item" type="button" onclick="navigate('index.html')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="9 22 9 12 15 12 15 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Home</span></button>
+    <button class="nav-item active" type="button" onclick="navigate('history.html')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 16 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>History</span></button>
+    <button class="nav-item" type="button" onclick="navigate('about.html')"><span class="check-circle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="white" stroke-width="2"/><line x1="12" y1="11" x2="12" y2="17" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7" r="1" fill="white" stroke="none"/></svg></span><span>About</span></button>
+    <button class="nav-item" type="button" onclick="navigate('free.html')"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Free AI</span></button>
+    <button class="nav-item" type="button" onclick="navigate('chat.html')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="10" r="1" fill="currentColor" stroke="none"/></svg><span>AI Chat</span></button>
+  </nav>
+  <script>
+    function navigate(page) { window.location.href = page; }
+  </script>
+</body>
+</html>
