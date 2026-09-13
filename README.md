@@ -2,6 +2,19 @@
 
 AI Detection is a full-stack JavaScript application for detecting and transforming AI-generated content. It includes a browser-based interface, authentication, credit-based usage, AI chat, text humanization, and optional premium plans handled through RevenueCat.
 
+## Release
+
+### v1.0.0
+
+This release contains the current AI Detection web app and installable PWA.
+
+- Start the Node.js server with `npm start`.
+- Open the deployed app in a supported browser.
+- Use the browser's install option to add the app to a phone or desktop.
+- Configure PostgreSQL and the required API keys before using protected features.
+
+An Android APK is not included because this repository is a server-backed PWA and does not contain an Android build project.
+
 ## Features
 
 - AI-content detection for text, images, video, and audio
