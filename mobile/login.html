@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/app-icon.svg">
+    <script src="js/pwa.js"></script>
+    <title>Account Access</title>
+    <style>
+        :root {
+            --bg-start: #e8f0fe;
+            --bg-mid: #d4e4ff;
+            --bg-end: #c9e2ff;
+            --glass-bg: rgba(255, 255, 255, 0.22);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --accent: #4a90d9;
+            --accent-strong: #2f6fc1;
+            --text: #1e3a5f;
+            --text-secondary: #5a7a9a;
+            --input-bg: rgba(255, 255, 255, 0.2);
+            --input-border: rgba(255, 255, 255, 0.7);
+            --input-focus: #4a90d9;
+            --danger: #d32f2f;
+            --success: #2e7d32;
+            --radius: 12px;
+            --shadow: 0 25px 60px rgba(0, 30, 60, 0.15);
+            --google-bg: rgba(255, 255, 255, 0.35);
+            --google-text: #1f3d5b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%; max-width: 100%; margin: 0; overflow: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-mid) 30%, #f0f7ff 70%, var(--bg-end) 100%);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            position: relative;
+            isolation: isolate;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.45;
+            z-index: 0;
+            pointer-events: none;
+            transform: none;
+        }
+
+        .blob-1 {
+            width: 420px;
+            height: 420px;
+            background: #b3d9ff;
+            top: -110px;
+            left: -90px;
+        }
+
+        .blob-2 {
+            width: 360px;
+            height: 360px;
+            background: #ffffff;
+            bottom: -60px;
+            right: -80px;
+            opacity: 0.5;
+        }
+
+        .blob-3 {
+            width: 260px;
+            height: 260px;
+            background: #a0c8ff;
+            top: 60%;
+            left: 68%;
+            opacity: 0.32;
+        }
+
+        .back-to-app {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 999px;
+            padding: 8px 14px;
+            cursor: pointer;
+            color: #214a75;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            z-index: 2;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+        .back-to-app:hover {
+            color: #0f2a44;
+            background: rgba(255,255,255,0.35);
+            box-shadow: 0 10px 25px rgba(74, 144, 217, 0.18);
+        }
+        .back-to-app svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .login-card {
+            position: relative;
+            z-index: 1;
+            background: var(--glass-bg);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            width: min(400px, 92vw);
+            max-height: calc(100vh - 30px);
+            overflow: hidden;
+            padding: 18px 20px 16px;
+            border-radius: 22px;
+            border: 1.5px solid var(--glass-border);
+            box-shadow:
+                0 25px 60px rgba(0, 30, 60, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+                0 15px 30px rgba(255, 255, 255, 0.25);
+        }
+
+        .login-card.signup-mode {
+            padding: 16px 18px 12px;
+            max-height: calc(100vh - 18px);
+        }
+
+        .login-card.signup-mode .card-header {
+            margin-bottom: 4px;
+        }
+
+        .login-card.signup-mode .glass-logo {
+            margin-bottom: 6px;
+        }
+
+        .login-card.signup-mode .form-group {
+            margin-bottom: 6px;
+        }
+
+        .login-card.signup-mode .password-rules {
+            margin-top: 2px;
+        }
+
+        .login-card.signup-mode .google-button-wrapper {
+            margin-top: 2px;
+        }
+
+        .login-card.signup-mode .submit-btn {
+            margin-top: 2px;
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .glass-logo {
+            width: 62px;
+            height: 62px;
+            margin: 0 auto 10px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.2);
+            border: 1.5px solid rgba(255,255,255,0.7);
+            box-shadow: 0 10px 25px rgba(0, 30, 60, 0.10), inset 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        .glass-logo svg {
+            width: 30px;
+            height: 30px;
+            fill: none;
+            stroke: #2a5c8a;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .card-header h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #1e3a5f;
+            margin-bottom: 4px;
+            text-shadow: 0 1px 10px rgba(255,255,255,0.45);
+        }
+        .card-header p {
+            font-size: 0.84rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            flex-wrap: wrap;
+        }
+        .mode-separator {
+            margin: 0 4px;
+            color: #6c87a5;
+        }
+        .mode-switch {
+            color: #2f6fc1;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            transition: color 0.2s ease;
+        }
+        .mode-switch:hover {
+            color: #1e4a70;
+        }
+        .skip-link {
+            display: inline-block;
+            margin-top: 10px;
+            color: #5a7a9a;
+            font-size: 0.85rem;
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(255,255,255,0.7);
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .skip-link:hover {
+            color: var(--accent-strong);
+            border-color: var(--accent-strong);
+        }
+
+        #nameGroup,
+        #confirmGroup {
+            display: none;
+        }
+
+        .login-card.signup-mode #nameGroup,
+        .login-card.signup-mode #confirmGroup {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #59789b;
+            margin-bottom: 6px;
+        }
+        .input-wrapper {
+            position: relative;
+        }
+        .input-wrapper input {
+            width: 100%;
+            padding: 11px 12px;
+            background: var(--input-bg);
+            border: 1.5px solid var(--input-border);
+            border-radius: 12px;
+            color: #1b2f46;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .input-wrapper input::placeholder {
+            color: #7793b0;
+        }
+        .input-wrapper input:focus {
+            border-color: rgba(74, 144, 217, 0.9);
+            box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.12);
+            background: rgba(255,255,255,0.28);
+        }
+        .input-wrapper input.input-error {
+            border-color: var(--danger);
+        }
+
+        .error-message {
+            font-size: 0.72rem;
+            color: var(--danger);
+            margin-top: 4px;
+            display: none;
+            min-height: 18px;
+        }
+        .error-message.visible {
+            display: block;
+        }
+
+        .toggle-password,
+        .toggle-confirm-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.35);
+            border: 1px solid rgba(255,255,255,0.8);
+            color: #355d8a;
+            padding: 4px 9px;
+            font-size: 0.72rem;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+        .toggle-password:hover,
+        .toggle-confirm-password:hover {
+            background: rgba(255,255,255,0.55);
+            color: #1a3756;
+        }
+
+        .biometric-block {
+            margin: 12px 0 8px;
+            text-align: center;
+        }
+        .biometric-block.hidden {
+            display: none;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            color: #587ca1;
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+            margin-bottom: 14px;
+            text-transform: uppercase;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.9), transparent);
+        }
+        .divider span {
+            margin: 0 12px;
+        }
+
+        .bio-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            background: rgba(255,255,255,0.25);
+            border: 1px solid rgba(255,255,255,0.7);
+            border-radius: 30px;
+            color: #234b75;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(74, 144, 217, 0.12);
+        }
+        .bio-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .bio-btn:not(:disabled):hover {
+            background: rgba(255,255,255,0.38);
+            border-color: rgba(255,255,255,0.9);
+            color: #183a5e;
+        }
+        .bio-btn.scanning {
+            animation: pulse 0.8s ease-in-out;
+        }
+        .bio-btn.success-state {
+            border-color: #2e7d32;
+            color: #2e7d32;
+            background: rgba(232, 245, 233, 0.8);
+        }
+        .bio-btn.error-state {
+            border-color: #d32f2f;
+            color: #d32f2f;
+            background: rgba(255, 235, 238, 0.8);
+        }
+        .bio-icon {
+            display: inline-block;
+            width: 14px;
+            height: 18px;
+            background: currentColor;
+            border-radius: 50% 50% 0 0;
+            position: relative;
+        }
+        .bio-icon::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 2px;
+            width: 10px;
+            height: 6px;
+            border: 2px solid currentColor;
+            border-top: 0;
+            border-radius: 0 0 6px 6px;
+        }
+        .bio-status {
+            font-size: 0.75rem;
+            margin-top: 8px;
+            color: #5a7a9a;
+            min-height: 18px;
+        }
+        .bio-status.success { color: #2e7d32; }
+        .bio-status.error { color: #d32f2f; }
+        .bio-hint {
+            font-size: 0.7rem;
+            color: #6b89ac;
+            margin-top: 6px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.03); }
+            60% { transform: scale(0.98); }
+            100% { transform: scale(1); }
+        }
+
+        .google-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 11px 22px;
+            background: rgba(255,255,255,0.25);
+            border: 1px solid rgba(255,255,255,0.8);
+            border-radius: 30px;
+            color: var(--google-text);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 25px rgba(74, 144, 217, 0.1);
+            width: auto;
+            margin-top: 10px;
+        }
+        .google-btn:hover {
+            background: rgba(255,255,255,0.38);
+            box-shadow: 0 10px 25px rgba(74, 144, 217, 0.18);
+        }
+        .google-btn .g-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+        }
+        .google-btn .g-icon svg {
+            display: block;
+            width: 24px;
+            height: 24px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: rgba(74, 144, 217, 0.25);
+            -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(15px);
+            border: 1.5px solid rgba(255,255,255,0.8);
+            border-radius: 12px;
+            color: #1e3a5f;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.35s ease;
+            margin-top: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow:
+                0 8px 25px rgba(74, 144, 217, 0.25),
+                inset 0 1px 0 rgba(255,255,255,0.4);
+        }
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+            transition: left 0.5s ease;
+        }
+        .submit-btn:hover {
+            background: rgba(74, 144, 217, 0.4);
+            color: #0f2a44;
+            box-shadow:
+                0 12px 35px rgba(74, 144, 217, 0.35),
+                inset 0 1px 0 rgba(255,255,255,0.6);
+            transform: translateY(-2px);
+        }
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+        .submit-btn:active {
+            transform: scale(0.98);
+            background: rgba(74, 144, 217, 0.35);
+            box-shadow:
+                0 0 25px rgba(74, 144, 217, 0.8),
+                0 0 50px rgba(74, 144, 217, 0.5),
+                0 4px 15px rgba(74, 144, 217, 0.3),
+                inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .submit-btn .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin: 0 auto;
+        }
+        .submit-btn.loading .btn-text {
+            display: none;
+        }
+        .submit-btn.loading .spinner {
+            display: block;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .password-rules {
+            font-size: 0.72rem;
+            color: #5a7a9a;
+            margin-top: 5px;
+            line-height: 1.4;
+            display: none;
+        }
+        .password-rules.visible {
+            display: block;
+        }
+        .google-button-wrapper {
+            text-align: center;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="login-card">
+        <div class="card-header">
+            <div class="glass-logo" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7l7-4z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+            </div>
+            <h2 id="modeTitle">Sign In</h2>
+            <p>
+                <span id="modeDesc">Access your account</span>
+                <span class="mode-separator">|</span>
+                <span class="mode-switch" id="modeToggle">Create account</span>
+            </p>
+        </div>
+
+        <form id="authForm" novalidate autocomplete="off">
+            <div class="form-group" id="nameGroup">
+                <label for="nameInput">Full Name</label>
+                <div class="input-wrapper">
+                    <input type="text" id="nameInput" placeholder="Your full name" autocomplete="name">
+                </div>
+                <div class="error-message" id="nameError">Please enter your full name</div>
+            </div>
+
+            <div class="form-group">
+                <label for="emailInput">Email</label>
+                <div class="input-wrapper">
+                    <input type="email" id="emailInput" placeholder="you@example.com" autocomplete="email">
+                </div>
+                <div class="error-message" id="emailError">Valid email required</div>
+            </div>
+
+            <div class="form-group">
+                <label for="passwordInput">Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="passwordInput" placeholder="Strong password" autocomplete="current-password">
+                    <button type="button" class="toggle-password" id="togglePassword">Show</button>
+                </div>
+                <div class="error-message" id="passwordError">Must be 8+ chars with upper, lower, digit, and special char</div>
+                <div class="password-rules" id="passwordRules">
+                    8+ characters, one uppercase, one lowercase, one number, one special character (!@#$%^&*)
+                </div>
+            </div>
+
+            <div class="form-group" id="confirmGroup">
+                <label for="confirmPasswordInput">Confirm Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="confirmPasswordInput" placeholder="Re-enter strong password" autocomplete="off">
+                    <button type="button" class="toggle-confirm-password" id="toggleConfirmPassword">Show</button>
+                </div>
+                <div class="error-message" id="confirmError">Passwords do not match</div>
+            </div>
+
+            <div class="biometric-block" id="biometricBlock">
+                <div class="divider"><span>Quick access</span></div>
+                <button type="button" class="bio-btn" id="bioBtn" disabled>
+                    <span class="bio-icon"></span>
+                    <span id="bioLabel">Biometric Login</span>
+                </button>
+                <div class="bio-status" id="bioStatus"></div>
+                <div class="bio-hint" id="bioHint">Enable after first password login</div>
+            </div>
+
+            <div class="google-button-wrapper">
+                <button type="button" class="google-btn" id="googleBtn">
+                    <span class="g-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                    </span>
+                    <span>Sign in with Google</span>
+                </button>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span class="btn-text">Sign In</span>
+                <span class="spinner"></span>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        (function() {
+            const form = document.getElementById('authForm');
+            const loginCard = document.querySelector('.login-card');
+            const modeTitle = document.getElementById('modeTitle');
+            const modeDesc = document.getElementById('modeDesc');
+            const modeToggle = document.getElementById('modeToggle');
+            const nameGroup = document.getElementById('nameGroup');
+            const nameInput = document.getElementById('nameInput');
+            const emailInput = document.getElementById('emailInput');
+            const passwordInput = document.getElementById('passwordInput');
+            const confirmGroup = document.getElementById('confirmGroup');
+            const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+            const togglePassword = document.getElementById('togglePassword');
+            const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+            const biometricBlock = document.getElementById('biometricBlock');
+            const bioBtn = document.getElementById('bioBtn');
+            const bioLabel = document.getElementById('bioLabel');
+            const bioStatus = document.getElementById('bioStatus');
+            const bioHint = document.getElementById('bioHint');
+            const googleBtn = document.getElementById('googleBtn');
+            const submitBtn = document.getElementById('submitBtn');
+            const passwordRules = document.getElementById('passwordRules');
+
+            const nameError = document.getElementById('nameError');
+            const emailError = document.getElementById('emailError');
+            const passwordError = document.getElementById('passwordError');
+            const confirmError = document.getElementById('confirmError');
+
+            let isLogin = true;
+            let scanning = false;
+            let scanTimer = null;
+
+            const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+            function isPasswordStrong(pwd) {
+                return strongPasswordRegex.test(pwd);
+            }
+
+            function isBiometricUnlocked() {
+                return localStorage.getItem('biometricUnlocked') === 'true';
+            }
+
+            function setBiometricUnlocked() {
+                localStorage.setItem('biometricUnlocked', 'true');
+            }
+
+            function updateBiometricUI() {
+                biometricBlock.classList.add('hidden');
+            }
+
+            function setMode(login) {
+                isLogin = login;
+                loginCard.classList.toggle('signup-mode', !login);
+                if (login) {
+                    modeTitle.textContent = 'Sign In';
+                    modeDesc.textContent = 'Access your account';
+                    modeToggle.textContent = 'Create account';
+                    nameGroup.style.display = 'none';
+                    confirmGroup.style.display = 'none';
+                    submitBtn.querySelector('.btn-text').textContent = 'Sign In';
+                    passwordRules.classList.remove('visible');
+                } else {
+                    modeTitle.textContent = 'Create Account';
+                    modeDesc.textContent = 'Join today';
+                    modeToggle.textContent = 'Sign in instead';
+                    nameGroup.style.display = 'block';
+                    confirmGroup.style.display = 'block';
+                    submitBtn.querySelector('.btn-text').textContent = 'Create Account';
+                    passwordRules.classList.add('visible');
+                }
+                clearErrors();
+                updateBiometricUI();
+                form.reset();
+            }
+
+            modeToggle.addEventListener('click', () => setMode(!isLogin));
+
+            togglePassword.addEventListener('click', () => {
+                const hidden = passwordInput.type === 'password';
+                passwordInput.type = hidden ? 'text' : 'password';
+                togglePassword.textContent = hidden ? 'Hide' : 'Show';
+            });
+
+            toggleConfirmPassword.addEventListener('click', () => {
+                const hidden = confirmPasswordInput.type === 'password';
+                confirmPasswordInput.type = hidden ? 'text' : 'password';
+                toggleConfirmPassword.textContent = hidden ? 'Hide' : 'Show';
+            });
+
+            function clearErrors() {
+                [nameError, emailError, passwordError, confirmError].forEach(el => el.classList.remove('visible'));
+                [nameInput, emailInput, passwordInput, confirmPasswordInput].forEach(el => el.classList.remove('input-error'));
+            }
+
+            function clearSingleError(input, errorEl) {
+                input.classList.remove('input-error');
+                errorEl.classList.remove('visible');
+            }
+
+            function showError(input, errorEl, msg) {
+                input.classList.add('input-error');
+                errorEl.textContent = msg;
+                errorEl.classList.add('visible');
+            }
+
+            function validate() {
+                clearErrors();
+                let valid = true;
+
+                if (!isLogin) {
+                    const name = nameInput.value.trim();
+                    if (!name || name.length < 2) {
+                        showError(nameInput, nameError, 'Name must be at least 2 characters');
+                        valid = false;
+                    }
+                }
+
+                const email = emailInput.value.trim();
+                if (!email) {
+                    showError(emailInput, emailError, 'Email is required');
+                    valid = false;
+                } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    showError(emailInput, emailError, 'Enter a valid email');
+                    valid = false;
+                }
+
+                const pwd = passwordInput.value;
+                if (!pwd) {
+                    showError(passwordInput, passwordError, 'Password is required');
+                    valid = false;
+                } else if (pwd.length < 8) {
+                    showError(passwordInput, passwordError, 'Password is too weak');
+                    valid = false;
+                }
+
+                if (!isLogin && !isPasswordStrong(pwd)) {
+                    showError(passwordInput, passwordError, 'Use 8+ characters with upper, lower, number, and special character');
+                    valid = false;
+                }
+
+                if (!isLogin) {
+                    const confirmPwd = confirmPasswordInput.value;
+                    if (!confirmPwd) {
+                        showError(confirmPasswordInput, confirmError, 'Please confirm your password');
+                        valid = false;
+                    } else if (pwd !== confirmPwd) {
+                        showError(confirmPasswordInput, confirmError, 'Passwords do not match');
+                        valid = false;
+                    }
+                }
+
+                return valid;
+            }
+
+            nameInput.addEventListener('input', () => clearSingleError(nameInput, nameError));
+            emailInput.addEventListener('input', () => clearSingleError(emailInput, emailError));
+            passwordInput.addEventListener('input', () => {
+                clearSingleError(passwordInput, passwordError);
+                if (!isLogin) passwordRules.classList.add('visible');
+                if (!isLogin && confirmPasswordInput.value) {
+                    if (passwordInput.value !== confirmPasswordInput.value) {
+                        showError(confirmPasswordInput, confirmError, 'Passwords do not match');
+                    } else {
+                        clearSingleError(confirmPasswordInput, confirmError);
+                    }
+                }
+            });
+            confirmPasswordInput.addEventListener('input', () => {
+                clearSingleError(confirmPasswordInput, confirmError);
+                if (!isLogin && passwordInput.value && confirmPasswordInput.value !== passwordInput.value) {
+                    showError(confirmPasswordInput, confirmError, 'Passwords do not match');
+                }
+            });
+            passwordInput.addEventListener('focus', () => {
+                if (!isLogin) passwordRules.classList.add('visible');
+            });
+
+            function resetBio() {
+                scanning = false;
+                bioBtn.classList.remove('scanning', 'success-state', 'error-state');
+                bioStatus.textContent = '';
+                bioStatus.className = 'bio-status';
+                if (scanTimer) clearTimeout(scanTimer);
+            }
+
+            function startBioScan() {
+                if (scanning || !isBiometricUnlocked()) return;
+                scanning = true;
+                bioBtn.classList.add('scanning');
+                bioBtn.classList.remove('success-state', 'error-state');
+                bioStatus.textContent = 'Scanning...';
+                bioStatus.className = 'bio-status';
+                bioLabel.textContent = 'Scanning...';
+
+                scanTimer = setTimeout(() => {
+                    const success = Math.random() < 0.8;
+                    if (success) {
+                        bioBtn.classList.remove('scanning');
+                        bioBtn.classList.add('success-state');
+                        bioStatus.textContent = '✓ Verified';
+                        bioStatus.className = 'bio-status success';
+                        bioLabel.textContent = 'Verified';
+
+                        // For biometric, we don't need to fill the form again; just redirect
+                        window.location.href = 'index.html';
+                    } else {
+                        bioBtn.classList.remove('scanning');
+                        bioBtn.classList.add('error-state');
+                        bioStatus.textContent = '✗ Not recognized';
+                        bioStatus.className = 'bio-status error';
+                        bioLabel.textContent = 'Try Again';
+                        setTimeout(resetBio, 2000);
+                    }
+                    scanning = false;
+                }, 1800);
+            }
+
+            bioBtn.addEventListener('click', () => {
+                if (!scanning && isBiometricUnlocked()) {
+                    resetBio();
+                    startBioScan();
+                }
+            });
+
+            googleBtn.addEventListener('click', () => {
+                bioStatus.textContent = 'Google sign-in is not configured yet.';
+                bioStatus.className = 'bio-status error';
+            });
+
+            async function handleSubmit(isBio = false) {
+                if (!validate()) {
+                    if (isBio) {
+                        bioStatus.textContent = 'Please fix the errors above';
+                        bioStatus.className = 'bio-status error';
+                    }
+                    return;
+                }
+
+                submitBtn.classList.add('loading');
+                submitBtn.disabled = true;
+                bioBtn.disabled = true;
+                googleBtn.disabled = true;
+
+                try {
+                    const apiBase = window.location.protocol === 'http:' || window.location.protocol === 'https:'
+                        ? window.location.origin
+                        : 'http://127.0.0.1:8000';
+                    const response = await fetch(`${apiBase}/auth/${isLogin ? 'login' : 'register'}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: nameInput.value.trim(), email: emailInput.value.trim(), password: passwordInput.value })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Authentication failed');
+
+                    localStorage.setItem('authToken', result.token);
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: result.id,
+                        name: result.name,
+                        email: result.email
+                    }));
+                    if (isLogin && !isBio) setBiometricUnlocked();
+                    window.location.href = 'index.html';
+                } catch (error) {
+                    bioStatus.textContent = error.message;
+                    bioStatus.className = 'bio-status error';
+                    submitBtn.classList.remove('loading');
+                    submitBtn.disabled = false;
+                    bioBtn.disabled = false;
+                    googleBtn.disabled = false;
+                }
+            }
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                resetBio();
+                handleSubmit(false);
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'b' && e.ctrlKey && !scanning && isBiometricUnlocked()) {
+                    e.preventDefault();
+                    resetBio();
+                    startBioScan();
+                }
+            });
+
+            setMode(true);
+            console.log('All buttons functional, biometric locked until first login.');
+        })();
+    </script>
+</body>
+</html>

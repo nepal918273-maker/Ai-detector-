@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/app-icon.svg">
+  <title>AI Detection – Input</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; max-width: 100%; margin: 0; overflow: hidden;
+    }
+    body {
+      background:
+        radial-gradient(circle at 15% 0%, rgba(96, 165, 250, 0.95), transparent 28%),
+        radial-gradient(circle at 92% 18%, rgba(255, 255, 255, 0.96), transparent 20%),
+        linear-gradient(135deg, #eaf5ff 0%, #dceeff 26%, #cfe3ff 70%, #eaf6ff 100%);
+      color: #172033;
+      font-family: Georgia, 'Times New Roman', serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(255,255,255,0.22), rgba(96,165,250,0.08), rgba(37,99,235,0.12));
+      pointer-events: none;
+      z-index: 0;
+    }
+    .header {
+      width: 100%; padding: 16px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255,255,255,0.32);
+      border-bottom: 1px solid rgba(255,255,255,0.78);
+      box-shadow: 0 18px 40px rgba(37,99,235,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+      -webkit-backdrop-filter: blur(18px);
+      backdrop-filter: blur(18px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo-container { width: 40px; height: 40px; }
+    .header-icons { display: flex; gap: 20px; align-items: center; }
+    .icon-btn { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.5); border-radius: 12px; cursor: pointer; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 8px 20px rgba(37,99,235,0.08); transition: all 0.2s ease; }
+    .icon-btn:hover { background: rgba(255,255,255,0.34); transform: translateY(-1px); }
+    .icon-btn:active { box-shadow: 0 0 0 3px rgba(96,165,250,0.18), 0 0 22px rgba(59,130,246,0.38); transform: scale(0.97); }
+    .icon-btn svg { width: 100%; height: 100%; fill: none; }
+    .badge { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #FF006E; border-radius: 50%; border: 2px solid #fff; display: none; }
+    .notification-panel { display: none; position: fixed; top: 70px; right: 18px; z-index: 200; width: min(340px, calc(100vw - 36px)); max-height: 360px; overflow: auto; background: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.8); border-radius: 14px; box-shadow: 0 18px 45px rgba(23,32,51,.16); padding: 14px; -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+    .notification-panel.open { display: block; animation: notificationIn .2s ease; }
+    .notification-title { font-weight: 700; margin-bottom: 10px; }
+    .notification-item { border-top: 1px solid rgba(148,163,184,0.25); padding: 10px 0; font-size: .86rem; }
+    .notification-item strong { display: block; margin-bottom: 3px; }
+    .notification-item small { color: #888; }
+    .notification-empty { color: #777; font-size: .9rem; }
+    @keyframes notificationIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .main-content {
+      flex: 1; display: flex; flex-direction: column;
+      padding: 20px; gap: 24px;
+      max-width: 760px; margin: 0 auto; width: 100%;
+      padding-top: 42px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      height: calc(100vh - 170px);
+      position: relative; z-index: 1;
+    }
+    .page-heading {
+      display: flex; align-items: center; gap: 12px;
+      font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 700; color: #172033;
+    }
+    .page-heading svg { width: 44px; height: 44px; fill: none; }
+    .page-heading span {
+      background: linear-gradient(135deg, #2563EB, #06B6D4);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .detection-card {
+      background: rgba(255,255,255,0.36);
+      border: 1px solid rgba(255,255,255,0.82);
+      border-radius: 24px; padding: 28px 24px;
+      box-shadow: 0 26px 70px rgba(22, 65, 130, 0.18), inset 0 1px 0 rgba(255,255,255,0.78);
+      -webkit-backdrop-filter: blur(18px);
+      backdrop-filter: blur(18px);
+      width: 100%; display: flex; flex-direction: column; gap: 20px;
+    }
+    .input-tabs { display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid rgba(148,163,184,0.35); padding-bottom: 12px; }
+    .tab-btn {
+      padding: 10px 20px; border: 1px solid rgba(255,255,255,0.7); border-radius: 20px;
+      background: rgba(255,255,255,0.44); cursor: pointer; font-size: 0.85rem; font-weight: 500;
+      transition: all 0.2s ease; white-space: nowrap; color: #234b76;
+    }
+    .tab-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.7); }
+    .tab-btn:active { box-shadow: 0 0 18px rgba(37,99,235,0.35); transform: scale(0.98); }
+    .tab-btn.active { background: linear-gradient(135deg, #3b82f6, #3db6ff); color: white; border-color: rgba(59,130,246,0.8); box-shadow: 0 10px 24px rgba(59,130,246,0.3); }
+
+    .input-area { display: flex; flex-direction: column; gap: 12px; }
+    textarea {
+      width: 100%; min-height: 150px; padding: 14px;
+      border: 2px solid #e5e7eb; border-radius: 12px; font-size: 1rem;
+      font-family: inherit; resize: vertical; outline: none; transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: #2563EB; }
+    input[type="text"] {
+      width: 100%; padding: 14px; border: 2px solid #e5e7eb; border-radius: 12px;
+      font-size: 1rem; outline: none; transition: border-color 0.2s;
+    }
+    input[type="text"]:focus { border-color: #2563EB; }
+    .file-upload-area {
+      border: 2px dashed #d0d0d0; border-radius: 12px; padding: 30px;
+      text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    }
+    .file-upload-area:hover { border-color: #2563EB; background: #f0f4ff; }
+    .photo-preview { max-width: 100%; border-radius: 12px; margin-top: 10px; display: none; }
+
+    .detect-btn {
+      width: 100%;
+      padding: 14px 24px;
+      border: 1px solid rgba(255,255,255,0.7);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(125,211,252,0.45) 18%, rgba(59,130,246,0.9) 52%, rgba(14,165,233,0.9) 100%);
+      color: #f8fbff;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      box-shadow: 0 12px 26px rgba(37,99,235,0.24), 0 0 0 1px rgba(255,255,255,0.25) inset, 0 0 16px rgba(96,165,250,0.28);
+      transition: transform 0.18s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      text-shadow: 0 1px 6px rgba(15, 23, 42, 0.22);
+    }
+    .detect-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.34) 50%, transparent 100%);
+      transform: translateX(-120%);
+      transition: transform 0.5s ease;
+    }
+    .detect-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 18px 30px rgba(37,99,235,0.3), 0 0 18px rgba(96,165,250,0.38), 0 0 0 1px rgba(255,255,255,0.28) inset;
+    }
+    .detect-btn:hover::before { transform: translateX(120%); }
+    .detect-btn:active {
+      transform: scale(0.985);
+      box-shadow: 0 0 0 4px rgba(96,165,250,0.22), 0 0 26px rgba(59,130,246,0.7), 0 8px 18px rgba(37,99,235,0.3), 0 0 0 1px rgba(255,255,255,0.3) inset;
+    }
+
+    .bottom-nav {
+      display: flex; justify-content: space-around; align-items: center;
+      background: #fff; border-top: 1px solid #e5e7eb;
+      padding: 10px 0 18px; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      position: sticky; bottom: 0; z-index: 100;
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      background: none; border: none; cursor: pointer; color: #6b7280;
+      font-size: 0.7rem; font-weight: 500; transition: color 0.2s, transform 0.2s;
+      text-decoration: none;
+    }
+    .nav-item.active { color: #2563EB; }
+    .nav-item:hover { color: #2563EB; transform: scale(1.05); }
+    .nav-item svg { width: 24px; height: 24px; fill: none; }
+    .nav-item:active { transform: scale(0.95); }
+    .check-circle {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: #2563EB; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.4);
+    }
+    .check-circle svg { width: 24px; height: 24px; stroke: white; stroke-width: 2; fill: none; }
+  </style>
+</head>
+<body>
+  <script src="js/auth-guard.js"></script>
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo-container">
+      <svg viewBox="0 0 200 200" width="40" height="40">
+        <defs>
+          <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#2563EB"/>
+            <stop offset="100%" stop-color="#06B6D4"/>
+          </linearGradient>
+        </defs>
+        <circle cx="100" cy="100" r="80" fill="#F0F9FF" stroke="url(#logoGrad)" stroke-width="6"/>
+        <text x="100" y="130" font-family="Arial" font-size="90" font-weight="700" fill="url(#logoGrad)" text-anchor="middle" letter-spacing="-8">AI</text>
+        <path d="M 30 100 A 70 70 0 0 1 100 30" fill="none" stroke="url(#logoGrad)" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="30" cy="100" r="4" fill="#2563EB"/>
+      </svg>
+    </div>
+    <div class="header-icons">
+      <a href="login.html" class="icon-btn" aria-label="Profile">
+        <svg viewBox="0 0 28 28"><circle cx="14" cy="9" r="5" fill="none" stroke="#1A1A1A" stroke-width="1.8"/><path d="M5,25 C5,18 9,15 14,15 C19,15 23,18 23,25" fill="none" stroke="#1A1A1A" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </a>
+      <button class="icon-btn" id="notifBtn" aria-label="Notifications">
+        <svg viewBox="0 0 28 28"><path d="M8,10 C8,6 11,3 14,3 C17,3 20,6 20,10 L21,14 L21,16 C21,17 20,18 20,19 L8,19 C8,18 7,17 7,16 L7,14 Z" fill="none" stroke="#1A1A1A" stroke-width="1.8" stroke-linejoin="round"/><path d="M10,20 A4,4 0 0,0 18,20" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="14" cy="20" r="1.5" fill="#1A1A1A"/></svg>
+        <span class="badge" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+  <aside class="notification-panel" id="notificationPanel" aria-live="polite"></aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <div class="page-heading">
+      <svg viewBox="0 0 200 200" width="44" height="44">
+        <defs>
+          <linearGradient id="headingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#2563EB"/>
+            <stop offset="100%" stop-color="#06B6D4"/>
+          </linearGradient>
+        </defs>
+        <circle cx="100" cy="100" r="80" fill="#F0F9FF" stroke="url(#headingGrad)" stroke-width="6"/>
+        <text x="100" y="130" font-family="Arial" font-size="90" font-weight="700" fill="url(#headingGrad)" text-anchor="middle" letter-spacing="-8">AI</text>
+        <path d="M 30 100 A 70 70 0 0 1 100 30" fill="none" stroke="url(#headingGrad)" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="30" cy="100" r="4" fill="#2563EB"/>
+      </svg>
+      <span>AI Detection</span>
+    </div>
+
+    <div class="detection-card">
+      <div class="input-tabs">
+        <button class="tab-btn active" data-mode="text">📝 Text</button>
+        <button class="tab-btn" data-mode="url">🔗 URL</button>
+        <button class="tab-btn" data-mode="file">📁 Files</button>
+        <button class="tab-btn" data-mode="photo">📷 Photo</button>
+      </div>
+
+      <div class="input-area" id="inputArea">
+        <textarea id="textInput" placeholder="Paste text to analyze..."></textarea>
+      </div>
+
+      <button class="detect-btn" id="detectBtn" onclick="goToDetection()">AI Detection</button>
+    </div>
+  </main>
+
+  <!-- BOTTOM NAVIGATION -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="navigate('index.html')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="9 22 9 12 15 12 15 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" onclick="navigate('history.html')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 16 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>History</span>
+    </button>
+    <button class="nav-item" onclick="navigate('about.html')" aria-label="About this AI">
+      <span class="check-circle">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="white" stroke-width="2"/><line x1="12" y1="11" x2="12" y2="17" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7" r="1" fill="white" stroke="none"/></svg>
+      </span>
+      <span>About</span>
+    </button>
+    <button class="nav-item" onclick="navigate('free.html')">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Free AI</span>
+    </button>
+    <button class="nav-item" onclick="navigate('chat.html')">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="10" r="1" fill="currentColor" stroke="none"/></svg>
+      <span>AI Chat</span>
+    </button>
+  </nav>
+
+  <script src="js/app.js"></script>
+  <script src="js/pwa.js"></script>
+  <script>
+    const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : window.location.origin;
+    function navigate(page) { window.location.href = page; }
+
+    const notificationPanel = document.getElementById('notificationPanel');
+    const notifBtn = document.getElementById('notifBtn');
+    function renderNotifications() {
+      const notifications = getAINotifications();
+      notificationPanel.innerHTML = '<div class="notification-title">Notifications</div>' + (notifications.length
+        ? notifications.map(item => `<div class="notification-item"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.message)}</span><small>${escapeHtml(item.time)}</small></div>`).join('')
+        : '<div class="notification-empty">No notifications yet.</div>');
+      notifBtn.querySelector('.badge').style.display = notifications.some(item => !item.read) ? 'block' : 'none';
+    }
+    function escapeHtml(value) {
+      const element = document.createElement('div');
+      element.textContent = String(value ?? '');
+      return element.innerHTML;
+    }
+    notifBtn.addEventListener('click', () => {
+      notificationPanel.classList.toggle('open');
+      if (notificationPanel.classList.contains('open')) { markAINotificationsRead(); renderNotifications(); }
+    });
+    renderNotifications();
+    window.addEventListener('storage', renderNotifications);
+
+    let currentMode = 'text';
+    let fileContent = '';
+    let photoData = null;
+    let photoName = '';
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentMode = this.dataset.mode;
+        updateInputArea();
+        resetData();
+      });
+    });
+
+    function resetData() {
+      fileContent = '';
+      photoData = null;
+      photoName = '';
+    }
+
+    function updateInputArea() {
+      const inputArea = document.getElementById('inputArea');
+      if (currentMode === 'text') {
+        inputArea.innerHTML = `<textarea id="textInput" placeholder="Paste text to analyze..."></textarea>`;
+        // Auto-save text input
+        document.getElementById('textInput').addEventListener('input', function() {
+          localStorage.setItem('lastUserInput', this.value);
+          localStorage.removeItem('lastUserPhoto');
+        });
+      } else if (currentMode === 'url') {
+        inputArea.innerHTML = `<input type="text" id="urlInput" placeholder="Paste URL here...">`;
+        // Auto-save URL input
+        document.getElementById('urlInput').addEventListener('input', function() {
+          localStorage.setItem('lastUserInput', this.value);
+          localStorage.removeItem('lastUserPhoto');
+        });
+      } else if (currentMode === 'file') {
+        inputArea.innerHTML = `
+          <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+            <p>📁 Click to upload file</p>
+            <p style="font-size:0.8rem; color:#999;">Supported: .txt, .pdf, .docx, .csv, .json, etc.</p>
+            <input type="file" id="fileInput" style="display:none;" onchange="handleFile(this.files)">
+          </div>
+          <div id="fileContent" style="font-size:0.9rem;"></div>
+        `;
+      } else if (currentMode === 'photo') {
+        inputArea.innerHTML = `
+          <div class="file-upload-area" onclick="document.getElementById('photoInput').click()">
+            <p>📷 Click to upload photo</p>
+            <input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="handlePhoto(this.files)">
+          </div>
+          <img id="photoPreview" class="photo-preview" alt="Photo preview">
+          <div id="photoName" style="font-size:0.9rem;"></div>
+        `;
+      }
+    }
+
+    function handleFile(files) {
+      if (!files.length) return;
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        fileContent = e.target.result;
+        document.getElementById('fileContent').innerHTML = `<strong>${file.name}</strong> loaded.`;
+        // Auto-save file content
+        localStorage.setItem('lastUserInput', fileContent);
+        localStorage.removeItem('lastUserPhoto');
+        localStorage.setItem('lastUserFileName', file.name);
+      };
+      reader.readAsText(file);
+    }
+
+    function handlePhoto(files) {
+      if (!files.length) return;
+      const file = files[0];
+      photoName = file.name;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        photoData = e.target.result;
+        const preview = document.getElementById('photoPreview');
+        preview.src = photoData;
+        preview.style.display = 'block';
+        document.getElementById('photoName').innerHTML = `<strong>${file.name}</strong> loaded.`;
+        // Auto-save photo
+        localStorage.setItem('lastUserPhoto', photoData);
+        localStorage.removeItem('lastUserInput');
+        localStorage.setItem('lastUserFileName', file.name);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function goToDetection() {
+      // If current mode is photo, save photo data for detection page
+      if (currentMode === 'photo' && photoData) {
+        localStorage.setItem('ai_detect_photo', JSON.stringify({ data: photoData, name: photoName }));
+      }
+
+      let data = '';
+      if (currentMode === 'text') {
+        data = encodeURIComponent(document.getElementById('textInput').value.trim() || '');
+      } else if (currentMode === 'url') {
+        data = encodeURIComponent(document.getElementById('urlInput').value.trim() || '');
+      } else if (currentMode === 'file') {
+        data = encodeURIComponent(fileContent || '');
+      }
+
+      if (currentMode !== 'photo' && !data) {
+        alert('Please provide input first.');
+        return;
+      }
+
+      if (currentMode === 'photo' && !photoData) {
+        alert('Please upload a photo first.');
+        return;
+      }
+
+      window.location.href = `detection.html?type=${currentMode}&data=${data}`;
+    }
+
+    // Initialize
+    updateInputArea();
+
+    // Restore any saved input from localStorage if page reloaded
+    (function restoreSavedInput() {
+      const savedText = localStorage.getItem('lastUserInput');
+      const savedPhoto = localStorage.getItem('lastUserPhoto');
+      if (savedText) {
+        currentMode = 'text';
+        document.querySelector('[data-mode="text"]').classList.add('active');
+        updateInputArea();
+        document.getElementById('textInput').value = savedText;
+      } else if (savedPhoto) {
+        currentMode = 'photo';
+        document.querySelector('[data-mode="photo"]').classList.add('active');
+        updateInputArea();
+        const preview = document.getElementById('photoPreview');
+        preview.src = savedPhoto;
+        preview.style.display = 'block';
+        document.getElementById('photoName').innerHTML = `<strong>${localStorage.getItem('lastUserFileName') || 'Saved photo'}</strong>`;
+        photoData = savedPhoto;
+      }
+    })();
+  </script>
+</body>
+</html>

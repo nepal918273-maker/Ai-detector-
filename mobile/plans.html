@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/app-icon.svg">
+  <script src="js/pwa.js"></script>
+  <title>Credit Plans</title>
+  <style>
+    :root { --ink: #102a43; --muted: #627d98; --blue: #2563eb; --line: #d9e2ec; --paper: #f5f8fc; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: Georgia, 'Times New Roman', serif; color: var(--ink); background: radial-gradient(circle at top left, #d9f4ff, transparent 42%), var(--paper); }
+    main { width: min(1080px, 92vw); margin: 0 auto; padding: 64px 0; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 42px; }
+    h1 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 4rem); }
+    header p { margin: 0; color: var(--muted); font-family: Arial, sans-serif; }
+    a { color: var(--blue); font-family: Arial, sans-serif; }
+    .plans { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    article { display: flex; flex-direction: column; min-height: 290px; padding: 24px; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 14px 30px rgba(16,42,67,.07); }
+    article.featured { border: 2px solid var(--blue); transform: translateY(-8px); }
+    h2 { margin: 0 0 20px; font-size: 1.35rem; }
+    .credits { margin: 0; font-size: 2.4rem; font-weight: 700; }
+    .duration { color: var(--muted); font-family: Arial, sans-serif; }
+    .price { margin: 22px 0; font: 700 1.35rem Arial, sans-serif; }
+    button { margin-top: auto; padding: 12px 16px; border: 0; border-radius: 6px; background: var(--blue); color: white; cursor: pointer; font-weight: 700; }
+    button:disabled { background: #9fb3c8; cursor: not-allowed; }
+    @media (max-width: 800px) { .plans { grid-template-columns: repeat(2, 1fr); } article.featured { transform: none; } }
+    @media (max-width: 500px) { main { padding: 32px 0; } header { align-items: flex-start; flex-direction: column; } .plans { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <script src="js/auth-guard.js"></script>
+  <main>
+    <header><div><h1>Choose your credits</h1><p>Use credits for AI features. Prices are in USD.</p></div><a href="index.html">Back to app</a></header>
+    <section class="plans" id="plans" aria-live="polite"></section>
+    <div id="paywall-container" hidden></div>
+  </main>
+  <script type="module">
+    import { Purchases, PurchasesError, ErrorCode } from 'https://esm.sh/@revenuecat/purchases-js@1.13.2';
+
+    const plans = document.getElementById('plans');
+    const token = localStorage.getItem('authToken');
+    let purchases;
+    let offering;
+
+    function authHeaders() {
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    }
+
+    async function setupRevenueCat() {
+      if (!token) return;
+      const [configResponse, userResponse] = await Promise.all([
+        fetch('/revenuecat/config'),
+        fetch('/auth/me', { headers: authHeaders() })
+      ]);
+      if (!configResponse.ok || !userResponse.ok) throw new Error('RevenueCat is not configured for this account.');
+      const { apiKey } = await configResponse.json();
+      const user = await userResponse.json();
+      purchases = Purchases.configure({ apiKey, appUserId: String(user.id) });
+      const offerings = await purchases.getOfferings();
+      offering = offerings.current;
+      return offerings;
+    }
+
+    async function buy(packageToPurchase) {
+      const button = packageToPurchase.button;
+      button.disabled = true;
+      button.textContent = 'Opening checkout...';
+      try {
+        const result = await purchases.purchase({ rcPackage: packageToPurchase.package });
+        const active = Object.prototype.hasOwnProperty.call(result.customerInfo.entitlements.active, 'ai_detector_pro');
+        button.textContent = active ? 'Purchased' : 'Purchase complete';
+        document.querySelector('header p').textContent = 'Purchase complete. Credits will appear shortly.';
+      } catch (error) {
+        if (!(error instanceof PurchasesError && error.errorCode === ErrorCode.UserCancelledError)) {
+          button.disabled = false;
+          button.textContent = 'Try again';
+          alert(error.message || 'The purchase could not be completed.');
+        } else {
+          button.disabled = false;
+          button.textContent = 'Choose plan';
+        }
+      }
+    }
+
+    async function loadPlans() {
+      const planResponse = await fetch('/plans');
+      if (!planResponse.ok) throw new Error('Unable to load plans.');
+      const { plans: items } = await planResponse.json();
+      const visiblePlans = items;
+      if (token) {
+        const creditsResponse = await fetch('/credits', { headers: { Authorization: `Bearer ${token}` } });
+        if (creditsResponse.ok) {
+          const { credits } = await creditsResponse.json();
+          document.querySelector('header p').textContent = `You have ${credits} credits remaining.`;
+        }
+      }
+      plans.innerHTML = visiblePlans.map(plan => `<article class="${plan.id === 'monthly' ? 'featured' : ''}"><h2>${plan.name}</h2><p class="credits">${plan.credits}</p><span class="duration">credits · ${plan.duration}</span><p class="price">${plan.price_cents ? `$${(plan.price_cents / 100).toFixed(2)}` : 'Free'}</p><button data-plan="${plan.id}" ${plan.price_cents && !token ? 'disabled title="Sign in before purchasing"' : ''}>${plan.price_cents ? (token ? 'Choose plan' : 'Sign in to buy') : 'Start free'}</button></article>`).join('');
+      if (!token || !offering) return;
+      const packageByPlan = Object.fromEntries((offering.packages || []).map(packageItem => {
+        const identifier = packageItem.storeProduct?.identifier || '';
+        return [identifier, packageItem];
+      }));
+      plans.querySelectorAll('button[data-plan]').forEach(button => {
+        const packageToPurchase = packageByPlan[button.dataset.plan];
+        if (!packageToPurchase) return;
+        button.addEventListener('click', () => buy({ package: packageToPurchase, button }));
+      });
+    }
+
+    try {
+      await setupRevenueCat();
+      await loadPlans();
+    } catch (error) {
+      await loadPlans();
+      if (token) plans.insertAdjacentHTML('afterbegin', `<p>${error.message}</p>`);
+    }
+  </script>
+</body>
+</html>

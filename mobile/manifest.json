@@ -1,0 +1,18 @@
+{
+  "name": "AI Detection",
+  "short_name": "AI Detection",
+  "description": "Detect and transform AI-generated content.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eaf5ff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
