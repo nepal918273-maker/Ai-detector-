@@ -180,6 +180,16 @@
   </div>
 
   <script>
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[character]));
+    }
+
     function loadHistory() {
       let allHistory = [];
       try { allHistory = JSON.parse(localStorage.getItem('scanHistory') || '[]'); } catch { localStorage.removeItem('scanHistory'); }
@@ -193,7 +203,7 @@
 
       list.innerHTML = allHistory.map((entry, index) => {
         // Determine label
-        let typeLabel = entry.type || 'Unknown';
+        let typeLabel = escapeHtml(entry.type || 'Unknown');
         // Remove "Free from AI" phrase if present, replace with "Free AI"
         if (typeLabel === 'Free from AI') {
           typeLabel = 'Free AI';
@@ -209,15 +219,15 @@
               <div class="details-label">Input (${entry.input.type || 'unknown'})</div>
               <div class="details-content">
                 ${entry.input.type === 'photo' 
-                  ? `<img src="${entry.input.data}" alt="Input photo">` 
-                  : `<pre>${entry.input.data || ''}</pre>`}
-                ${entry.input.fileName ? `<p>File: ${entry.input.fileName}</p>` : ''}
+                  ? `<img src="${escapeHtml(entry.input.data)}" alt="Input photo">` 
+                  : `<pre>${escapeHtml(entry.input.data)}</pre>`}
+                ${entry.input.fileName ? `<p>File: ${escapeHtml(entry.input.fileName)}</p>` : ''}
               </div>
             </div>
             <div class="details-section">
               <div class="details-label">Output</div>
               <div class="details-content">
-                <pre>${JSON.stringify(entry.output, null, 2)}</pre>
+                <pre>${escapeHtml(JSON.stringify(entry.output, null, 2))}</pre>
               </div>
             </div>
           `;
@@ -235,11 +245,11 @@
               <small>AI Probability: ${score}%</small>
             ` : ''}
             <p><strong>Status:</strong> ${aiLabel}</p>
-            ${entry.message ? `<p>${entry.message}</p>` : ''}
-            ${entry.details?.length ? `<p><strong>Details found:</strong> ${entry.details.join('; ')}</p>` : ''}
-            ${entry.prompt ? `<p><strong>Prompt:</strong> ${entry.prompt}</p>` : ''}
-            ${entry.photo ? `<img src="${entry.photo}" style="max-width:100%; border-radius:8px;" alt="Detection photo">` : ''}
-            ${entry.contentPreview ? `<div class="details-content">${entry.contentPreview}</div>` : ''}
+            ${entry.message ? `<p>${escapeHtml(entry.message)}</p>` : ''}
+            ${entry.details?.length ? `<p><strong>Details found:</strong> ${escapeHtml(entry.details.join('; '))}</p>` : ''}
+            ${entry.prompt ? `<p><strong>Prompt:</strong> ${escapeHtml(entry.prompt)}</p>` : ''}
+            ${entry.photo ? `<img src="${escapeHtml(entry.photo)}" style="max-width:100%; border-radius:8px;" alt="Detection photo">` : ''}
+            ${entry.contentPreview ? `<div class="details-content">${escapeHtml(entry.contentPreview)}</div>` : ''}
           `;
         }
 
@@ -247,7 +257,7 @@
           <div class="history-item" data-index="${index}">
             <div class="history-item-top">
               <span class="history-type">${typeLabel}</span>
-              <span class="timestamp">${entry.timestamp || ''}</span>
+              <span class="timestamp">${escapeHtml(entry.timestamp)}</span>
             </div>
             <div class="details" id="details-${index}">
               ${detailsHTML}

@@ -16,6 +16,7 @@ const DETECTION_GUIDE = loadDetectionGuide();
 const PORT = Number(process.env.PORT || 8000);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+const MAX_BODY_BYTES = 12 * 1024 * 1024;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const REVENUECAT_PUBLIC_API_KEY = process.env.REVENUECAT_PUBLIC_API_KEY;
 const REVENUECAT_SECRET_API_KEY = process.env.REVENUECAT_SECRET_API_KEY;
@@ -109,7 +110,17 @@ async function refundCredit(userId) {
 function readBody(request) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    request.on('data', chunk => chunks.push(chunk));
+    let size = 0;
+    request.on('data', chunk => {
+      size += chunk.length;
+      if (size > MAX_BODY_BYTES) {
+        const error = Object.assign(new Error('Request body is too large'), { statusCode: 413 });
+        request.destroy(error);
+        reject(error);
+        return;
+      }
+      chunks.push(chunk);
+    });
     request.on('end', () => resolve(Buffer.concat(chunks)));
     request.on('error', reject);
   });
@@ -596,7 +607,8 @@ async function handle(request, response) {
 function serveStatic(requestPath, response) {
   const requested = requestPath === '/' ? '/index.html' : requestPath;
   const filename = path.join(ROOT, path.normalize(requested).replace(/^([/\\])+/, ''));
-  if (!filename.startsWith(ROOT) || !fs.existsSync(filename) || !fs.statSync(filename).isFile()) return sendError(response, 404, 'Not found');
+  const relativePath = path.relative(ROOT, filename);
+  if (relativePath.startsWith('..' + path.sep) || path.isAbsolute(relativePath) || !fs.existsSync(filename) || !fs.statSync(filename).isFile()) return sendError(response, 404, 'Not found');
   const types = {
     '.html': 'text/html; charset=utf-8',
     '.js': 'text/javascript; charset=utf-8',
