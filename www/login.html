@@ -6,6 +6,7 @@
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="apple-touch-icon" href="/app-icon.svg">
     <script src="js/pwa.js"></script>
+    <script src="js/config.js"></script>
     <title>Account Access</title>
     <style>
         :root {
@@ -890,8 +891,7 @@
                 googleBtn.disabled = true;
 
                 try {
-                    const isNative = window.location.protocol === 'capacitor:' || (window.location.protocol === 'http:' && window.location.hostname === 'localhost');
-                    const apiBase = isNative ? 'http://10.0.2.2:8000' : (window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : window.location.origin);
+                    const { apiBase } = { apiBase: window.APP_CONFIG.API_BASE };
                     const response = await fetch(`${apiBase}/auth/${isLogin ? 'login' : 'register'}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

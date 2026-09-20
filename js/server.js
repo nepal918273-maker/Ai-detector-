@@ -606,26 +606,31 @@ async function handle(request, response) {
 
 function serveStatic(requestPath, response) {
   const requested = requestPath === '/' ? '/index.html' : requestPath;
-  const filename = path.join(ROOT, path.normalize(requested).replace(/^([/\\])+/, ''));
+  const normalizedRequested = path.normalize(requested).replace(/^([/\\])+/, '');
+  const filename = path.join(ROOT, normalizedRequested);
   const relativePath = path.relative(ROOT, filename);
 
+  // Security: Prevent path traversal
   if (relativePath.startsWith('..' + path.sep) || path.isAbsolute(relativePath)) {
     return sendError(response, 403, 'Forbidden');
   }
 
   // Security: Prevent serving server-side or sensitive files
-  const baseName = path.basename(filename);
-  const extension = path.extname(filename);
-  const forbiddenFiles = ['.env', '.gitignore', 'package.json', 'package-lock.json', 'schema.sql', 'SETUP.md', 'README.md'];
+  const baseName = path.basename(filename).toLowerCase();
+  const extension = path.extname(filename).toLowerCase();
+  const forbiddenFiles = ['.env', '.gitignore', 'package.json', 'package-lock.json', 'schema.sql', 'setup.md', 'readme.md'];
   const forbiddenDirs = ['.git', '.idea', '.vscode', 'android', 'node_modules', 'uploads'];
 
-  if (forbiddenFiles.includes(baseName) || forbiddenDirs.some(dir => relativePath.startsWith(dir + path.sep))) {
+  const isForbiddenFile = forbiddenFiles.includes(baseName);
+  const isForbiddenDir = forbiddenDirs.some(dir => relativePath.startsWith(dir + path.sep) || relativePath === dir);
+
+  if (isForbiddenFile || isForbiddenDir) {
     return sendError(response, 403, 'Forbidden');
   }
 
   // If serving from root, hide server-side JS
-  if (ROOT === APP_ROOT && extension === '.js' && relativePath.startsWith('js' + path.sep)) {
-    const allowedClientJs = ['app.js', 'auth-guard.js', 'notifications.js', 'pwa.js'];
+  if (ROOT === APP_ROOT && extension === '.js' && (relativePath.startsWith('js' + path.sep) || relativePath.startsWith('js/'))) {
+    const allowedClientJs = ['app.js', 'auth-guard.js', 'notifications.js', 'pwa.js', 'config.js'];
     if (!allowedClientJs.includes(baseName)) {
       return sendError(response, 403, 'Forbidden');
     }
