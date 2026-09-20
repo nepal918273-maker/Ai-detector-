@@ -10,8 +10,8 @@ loadEnvFile();
 
 const { register, login, createApiKey, authenticateJwt, authenticateApiKey, requireDatabase } = require('./auth');
 
-const ROOT = APP_ROOT;
-const UPLOAD_DIR = path.join(ROOT, 'uploads');
+const ROOT = fs.existsSync(path.join(APP_ROOT, 'www')) ? path.join(APP_ROOT, 'www') : APP_ROOT;
+const UPLOAD_DIR = path.join(APP_ROOT, 'uploads');
 const DETECTION_GUIDE = loadDetectionGuide();
 const PORT = Number(process.env.PORT || 8000);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -608,7 +608,32 @@ function serveStatic(requestPath, response) {
   const requested = requestPath === '/' ? '/index.html' : requestPath;
   const filename = path.join(ROOT, path.normalize(requested).replace(/^([/\\])+/, ''));
   const relativePath = path.relative(ROOT, filename);
-  if (relativePath.startsWith('..' + path.sep) || path.isAbsolute(relativePath) || !fs.existsSync(filename) || !fs.statSync(filename).isFile()) return sendError(response, 404, 'Not found');
+
+  if (relativePath.startsWith('..' + path.sep) || path.isAbsolute(relativePath)) {
+    return sendError(response, 403, 'Forbidden');
+  }
+
+  // Security: Prevent serving server-side or sensitive files
+  const baseName = path.basename(filename);
+  const extension = path.extname(filename);
+  const forbiddenFiles = ['.env', '.gitignore', 'package.json', 'package-lock.json', 'schema.sql', 'SETUP.md', 'README.md'];
+  const forbiddenDirs = ['.git', '.idea', '.vscode', 'android', 'node_modules', 'uploads'];
+
+  if (forbiddenFiles.includes(baseName) || forbiddenDirs.some(dir => relativePath.startsWith(dir + path.sep))) {
+    return sendError(response, 403, 'Forbidden');
+  }
+
+  // If serving from root, hide server-side JS
+  if (ROOT === APP_ROOT && extension === '.js' && relativePath.startsWith('js' + path.sep)) {
+    const allowedClientJs = ['app.js', 'auth-guard.js', 'notifications.js', 'pwa.js'];
+    if (!allowedClientJs.includes(baseName)) {
+      return sendError(response, 403, 'Forbidden');
+    }
+  }
+
+  if (!fs.existsSync(filename) || !fs.statSync(filename).isFile()) {
+    return sendError(response, 404, 'Not found');
+  }
   const types = {
     '.html': 'text/html; charset=utf-8',
     '.js': 'text/javascript; charset=utf-8',

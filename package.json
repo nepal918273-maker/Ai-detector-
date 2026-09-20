@@ -5,7 +5,9 @@
   "description": "AI Detection web and mobile-installable application",
   "main": "js/server.js",
   "scripts": {
-    "start": "node js/server.js"
+    "start": "node js/server.js",
+    "build": "powershell -Command \"mkdir -p www/js; cp *.html www/; cp *.webmanifest www/; cp *.svg www/; cp service-worker.js www/; cp js/app.js www/js/; cp js/auth-guard.js www/js/; cp js/notifications.js www/js/; cp js/pwa.js www/js/\"",
+    "sync": "npm run build; npx cap copy android"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

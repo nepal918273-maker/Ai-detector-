@@ -4,16 +4,15 @@ AI Detection is a full-stack JavaScript application for detecting and transformi
 
 ## Release
 
-### v1.0.0
+### v1.1.0
 
-This release contains the current AI Detection web app and installable PWA.
+This release contains the current AI Detection web app, installable PWA, and optimized Android native project.
 
 - Start the Node.js server with `npm start`.
 - Open the deployed app in a supported browser.
 - Use the browser's install option to add the app to a phone or desktop.
+- **Android Support**: A pre-configured Android project is included in the `android/` directory. Use Gradle to build the APK.
 - Configure PostgreSQL and the required API keys before using protected features.
-
-An Android APK is not included because this repository is a server-backed PWA and does not contain an Android build project.
 
 ## Features
 
